@@ -1,4 +1,4 @@
-# Backend KedaiReka
+# Backend Pix2Land
 
 A highly secure Express.js backend API built with enterprise-grade security features.
 
@@ -20,7 +20,7 @@ A highly secure Express.js backend API built with enterprise-grade security feat
 - **Logging**: Winston-based logging for security audits
 
 ### Additional Features
-- MongoDB integration with Mongoose
+- PostgreSQL integration with Supabase
 - Compression middleware
 - Cookie-based authentication support
 - Environment-based configuration
@@ -48,7 +48,7 @@ cp .env.example .env
 Edit `.env` and update the following critical values:
 - `JWT_SECRET` - Strong secret key for JWT tokens
 - `JWT_REFRESH_SECRET` - Strong secret key for refresh tokens
-- `MONGODB_URI` - MongoDB connection string
+- `DATABASE_URL` - PostgreSQL/Supabase connection string
 - `CORS_ORIGIN` - Allowed origin for CORS
 
 4. Start the development server

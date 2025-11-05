@@ -14,7 +14,7 @@ This means **Vercel doesn't have access to your environment variables**, specifi
 
 1. **Go to your Vercel project**
    - Visit https://vercel.com/dashboard
-   - Click on your project: `kedaireka-backend`
+   - Click on your project: `pix2land-backend`
 
 2. **Navigate to Settings**
    - Click on the "Settings" tab at the top
@@ -121,7 +121,7 @@ After setting environment variables and redeploying:
 2. **Test the endpoints**
    ```bash
    # Health check
-   curl https://kedaireka-backend.vercel.app/health
+   curl https://pix2land-backend.vercel.app/health
 
    # Should return:
    # {"success":true,"message":"Server is healthy","timestamp":"..."}
@@ -192,9 +192,9 @@ Once environment variables are configured and working:
 
 1. Test all endpoints:
    ```bash
-   curl https://kedaireka-backend.vercel.app/
-   curl https://kedaireka-backend.vercel.app/health
-   curl https://kedaireka-backend.vercel.app/api/v1
+   curl https://pix2land-backend.vercel.app/
+   curl https://pix2land-backend.vercel.app/health
+   curl https://pix2land-backend.vercel.app/api/v1
    ```
 
 2. Monitor logs in Vercel dashboard for any issues

@@ -13,7 +13,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Backend KedaiReka API v1',
+    message: 'Backend Pix2Land API v1',
     version: '1.0.0',
   });
 });

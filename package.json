@@ -1,7 +1,7 @@
 {
-  "name": "backend-kedaireka",
+  "name": "backend-pix2land",
   "version": "1.0.0",
-  "description": "Secure Express.js backend for KedaiReka platform",
+  "description": "Secure Express.js backend for Pix2Land platform",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -19,7 +19,7 @@
     "backend",
     "api",
     "secure",
-    "kedaireka"
+    "pix2land"
   ],
   "author": "",
   "license": "ISC",

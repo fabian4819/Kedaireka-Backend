@@ -90,7 +90,7 @@ app.use('/api/', apiLimiter);
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Backend KedaiReka API',
+    message: 'Backend Pix2Land API',
     version: '1.0.0',
     endpoints: {
       health: '/health',
