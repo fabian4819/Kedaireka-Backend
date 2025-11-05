@@ -1,44 +1,55 @@
-const mongoose = require('mongoose');
+const { Pool } = require('pg');
 const logger = require('../utils/logger');
+
+let pool;
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI;
+    const databaseURL = process.env.DATABASE_URL;
 
-    if (!mongoURI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
+    if (!databaseURL) {
+      throw new Error('DATABASE_URL is not defined in environment variables');
     }
 
-    const conn = await mongoose.connect(mongoURI, {
-      // Mongoose 6+ no longer requires useNewUrlParser and useUnifiedTopology
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
+    pool = new Pool({
+      connectionString: databaseURL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      ssl: databaseURL.includes('supabase.co') ? { rejectUnauthorized: false } : false,
     });
 
-    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    // Test the connection
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW()');
+    client.release();
 
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      logger.error(`MongoDB connection error: ${err}`);
-    });
+    logger.info(`PostgreSQL Connected: ${result.rows[0].now}`);
 
-    mongoose.connection.on('disconnected', () => {
-      logger.warn('MongoDB disconnected');
+    // Handle pool errors
+    pool.on('error', (err) => {
+      logger.error(`PostgreSQL pool error: ${err}`);
     });
 
     // Graceful shutdown
     process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      logger.info('MongoDB connection closed through app termination');
+      await pool.end();
+      logger.info('PostgreSQL connection closed through app termination');
       process.exit(0);
     });
 
-    return conn;
+    return pool;
   } catch (error) {
-    logger.error(`Error connecting to MongoDB: ${error.message}`);
+    logger.error(`Error connecting to PostgreSQL: ${error.message}`);
     process.exit(1);
   }
 };
 
-module.exports = connectDB;
+const getPool = () => {
+  if (!pool) {
+    throw new Error('Database pool not initialized. Call connectDB first.');
+  }
+  return pool;
+};
+
+module.exports = { connectDB, getPool };

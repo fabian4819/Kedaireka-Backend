@@ -1,7 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const mongoSanitize = require('./middleware/mongoSanitize');
+const sqlSanitize = require('./middleware/mongoSanitize');
 const xssSanitize = require('./middleware/xssSanitize');
 const hpp = require('hpp');
 const compression = require('compression');
@@ -58,8 +58,8 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Data sanitization against NoSQL injection
-app.use(mongoSanitize);
+// Data sanitization against SQL injection
+app.use(sqlSanitize);
 
 // Data sanitization against XSS
 app.use(xssSanitize);

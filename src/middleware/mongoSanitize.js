@@ -1,5 +1,6 @@
-// Custom MongoDB sanitization middleware compatible with Express 5
-// Removes any keys that start with '$' or contain '.' to prevent NoSQL injection
+// Custom SQL sanitization middleware compatible with Express 5
+// Removes any keys that start with '$' or contain '.' to prevent injection attacks
+// Note: PostgreSQL parameterized queries ($1, $2, etc.) provide primary SQL injection protection
 
 const sanitize = (obj) => {
   if (obj && typeof obj === 'object') {
@@ -14,7 +15,7 @@ const sanitize = (obj) => {
   return obj;
 };
 
-const mongoSanitize = (req, res, next) => {
+const sqlSanitize = (req, res, next) => {
   if (req.body) {
     req.body = sanitize(req.body);
   }
@@ -27,4 +28,4 @@ const mongoSanitize = (req, res, next) => {
   next();
 };
 
-module.exports = mongoSanitize;
+module.exports = sqlSanitize;

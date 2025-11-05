@@ -1,6 +1,6 @@
 require('dotenv').config();
 const app = require('./app');
-const connectDB = require('./config/database');
+const { connectDB } = require('./config/database');
 const logger = require('./utils/logger');
 
 // Handle uncaught exceptions

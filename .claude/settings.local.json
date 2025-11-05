@@ -4,7 +4,8 @@
       "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(tree:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
