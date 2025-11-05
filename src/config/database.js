@@ -7,17 +7,28 @@ const connectDB = async () => {
   try {
     const databaseURL = process.env.DATABASE_URL;
 
+    // Log for debugging in Vercel
+    console.log('Attempting database connection...');
+    console.log('DATABASE_URL exists:', !!databaseURL);
+
     if (!databaseURL) {
       throw new Error('DATABASE_URL is not defined in environment variables');
     }
 
     // Reuse existing pool if available (important for serverless)
     if (pool) {
+      console.log('Reusing existing database pool');
       return pool;
     }
 
     // Determine if running in serverless environment
     const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    console.log('Is serverless:', isServerless);
+
+    // Parse the database URL to log (without password)
+    const urlObj = new URL(databaseURL);
+    console.log('Database host:', urlObj.hostname);
+    console.log('Database port:', urlObj.port);
 
     pool = new Pool({
       connectionString: databaseURL,
@@ -27,15 +38,19 @@ const connectDB = async () => {
       ssl: databaseURL.includes('supabase.co') ? { rejectUnauthorized: false } : false,
     });
 
+    console.log('Pool created, testing connection...');
+
     // Test the connection
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();
 
+    console.log('Database connection successful!');
     logger.info(`PostgreSQL Connected: ${result.rows[0].now}`);
 
     // Handle pool errors
     pool.on('error', (err) => {
+      console.error('PostgreSQL pool error:', err);
       logger.error(`PostgreSQL pool error: ${err}`);
     });
 
@@ -50,6 +65,8 @@ const connectDB = async () => {
 
     return pool;
   } catch (error) {
+    console.error('Database connection error:', error.message);
+    console.error('Error stack:', error.stack);
     logger.error(`Error connecting to PostgreSQL: ${error.message}`);
 
     // Don't exit in serverless environment, throw error instead

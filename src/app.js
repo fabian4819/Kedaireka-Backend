@@ -108,6 +108,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug endpoint to check environment variables
+app.get('/debug', (req, res) => {
+  res.status(200).json({
+    success: true,
+    environment: process.env.NODE_ENV,
+    hasDatabase: !!process.env.DATABASE_URL,
+    databaseHost: process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).hostname : 'N/A',
+    isVercel: !!process.env.VERCEL,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API routes
 const routes = require('./routes');
 app.use('/api/v1', routes);
