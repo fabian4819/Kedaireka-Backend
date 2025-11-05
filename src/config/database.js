@@ -11,9 +11,17 @@ const connectDB = async () => {
       throw new Error('DATABASE_URL is not defined in environment variables');
     }
 
+    // Reuse existing pool if available (important for serverless)
+    if (pool) {
+      return pool;
+    }
+
+    // Determine if running in serverless environment
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
     pool = new Pool({
       connectionString: databaseURL,
-      max: 10,
+      max: isServerless ? 1 : 10, // Limit connections in serverless
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
       ssl: databaseURL.includes('supabase.co') ? { rejectUnauthorized: false } : false,
@@ -31,16 +39,24 @@ const connectDB = async () => {
       logger.error(`PostgreSQL pool error: ${err}`);
     });
 
-    // Graceful shutdown
-    process.on('SIGINT', async () => {
-      await pool.end();
-      logger.info('PostgreSQL connection closed through app termination');
-      process.exit(0);
-    });
+    // Graceful shutdown (only for non-serverless environments)
+    if (!isServerless) {
+      process.on('SIGINT', async () => {
+        await pool.end();
+        logger.info('PostgreSQL connection closed through app termination');
+        process.exit(0);
+      });
+    }
 
     return pool;
   } catch (error) {
     logger.error(`Error connecting to PostgreSQL: ${error.message}`);
+
+    // Don't exit in serverless environment, throw error instead
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      throw error;
+    }
+
     process.exit(1);
   }
 };
