@@ -7,7 +7,9 @@
       "Bash(curl:*)",
       "Bash(test:*)",
       "Bash(env:*)",
-      "Bash(unset:*)"
+      "Bash(unset:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
