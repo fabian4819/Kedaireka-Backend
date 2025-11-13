@@ -30,12 +30,23 @@ const connectDB = async () => {
     console.log('Database host:', urlObj.hostname);
     console.log('Database port:', urlObj.port);
 
+    // Configure SSL based on the database host
+    let sslConfig = false;
+
+    if (databaseURL.includes('aivencloud.com')) {
+      // For Aiven, disable certificate verification but keep SSL
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      sslConfig = true;
+    } else if (databaseURL.includes('supabase.co')) {
+      sslConfig = { rejectUnauthorized: false };
+    }
+
     pool = new Pool({
       connectionString: databaseURL,
       max: isServerless ? 1 : 10, // Limit connections in serverless
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
-      ssl: databaseURL.includes('supabase.co') ? { rejectUnauthorized: false } : false,
+      ssl: sslConfig,
     });
 
     console.log('Pool created, testing connection...');

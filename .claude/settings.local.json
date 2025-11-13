@@ -5,7 +5,9 @@
       "Bash(npm:*)",
       "Bash(tree:*)",
       "Bash(curl:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(env:*)",
+      "Bash(unset:*)"
     ],
     "deny": [],
     "ask": []

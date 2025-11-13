@@ -12,7 +12,23 @@ process.on('uncaughtException', (err) => {
 });
 
 // Connect to database
-connectDB();
+const initializeApp = async () => {
+  try {
+    await connectDB();
+
+    // Initialize User table after database connection
+    const User = require('./models/User.model');
+    await User.createTable();
+    console.log('Users table initialized successfully');
+    logger.info('Users table initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize application:', error.message);
+    logger.error(`Failed to initialize application: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+initializeApp();
 
 // Start server
 const PORT = process.env.PORT || 5000;
