@@ -10,7 +10,7 @@ const morgan = require('morgan');
 const logger = require('./utils/logger');
 const { errorHandler } = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
-
+const { connectDB, getPool } = require('./config/database');
 // Initialize express app
 const app = express();
 
@@ -119,7 +119,84 @@ app.get('/debug', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+// ENDPOINT GEOSPATIAL
+const wrapGeoJSON = (rows) => ({
+  type: 'FeatureCollection',
+  features: rows.map((row) => row.geojson),
+});
+app.get('/buildings', async (req, res) => {
+  try {
+    const pool = getPool();
+    const result = await pool.query(`
+      SELECT jsonb_build_object(
+        'type', 'Feature',
+        'id', b.id,
+        'geometry', ST_AsGeoJSON(b.geom)::jsonb,
+        'properties', to_jsonb(b) - 'geom'
+      ) AS geojson
+      FROM "Buildings" b;
+    `);
 
+    res.json({
+      type: 'FeatureCollection',
+      features: result.rows.map((r) => r.geojson),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get('/tiles', async (req, res) => {
+  try {
+    const pool = getPool();
+    const result = await pool.query(`
+      SELECT jsonb_build_object(
+        'type', 'Feature',
+        'id', t.id,
+        'geometry', ST_AsGeoJSON(t.geom)::jsonb,
+        'properties', to_jsonb(t) - 'geom'
+      ) AS geojson
+      FROM "Tiles" t;
+    `);
+
+    res.json({
+      type: 'FeatureCollection',
+      features: result.rows.map((r) => r.geojson),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get('/tiles/:id/buildings', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+      SELECT jsonb_build_object(
+        'type', 'Feature',
+        'id', b.id,
+        'geometry', ST_AsGeoJSON(b.geom)::jsonb,
+        'properties', to_jsonb(b) - 'geom'
+      ) AS geojson
+      FROM "Buildings" b
+      JOIN "Tiles" t ON ST_Intersects(b.geom, t.geom)
+      WHERE t.id = $1;
+    `,
+      [id]
+    );
+
+    res.json({
+      type: 'FeatureCollection',
+      features: result.rows.map((r) => r.geojson),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 // API routes
 const routes = require('./routes');
 app.use('/api/v1', routes);
