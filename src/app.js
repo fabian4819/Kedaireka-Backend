@@ -57,15 +57,17 @@ const corsOptions = {
       'https://api.mapbox.com',
       'https://tiles.mapbox.com',
       'https://.mapbox.com',
-      /^https:\/\/.*\.mapbox\.com$/ // Allow all Mapbox subdomains
+      /^https:\/\/.*\.mapbox\.com$/, // Allow all Mapbox subdomains
     ];
 
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.some(allowedOrigin =>
-      typeof allowedOrigin === 'string' ? allowedOrigin === origin : allowedOrigin.test(origin)
-    )) {
+    if (
+      allowedOrigins.some((allowedOrigin) =>
+        typeof allowedOrigin === 'string' ? allowedOrigin === origin : allowedOrigin.test(origin)
+      )
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -74,13 +76,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Origin',
-    'Accept'
-  ],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
 };
 app.use(cors(corsOptions));
 
@@ -146,10 +142,6 @@ app.get('/debug', (req, res) => {
   });
 });
 // ENDPOINT GEOSPATIAL
-const wrapGeoJSON = (rows) => ({
-  type: 'FeatureCollection',
-  features: rows.map((row) => row.geojson),
-});
 app.get('/buildings', async (req, res) => {
   try {
     const pool = getPool();
@@ -167,6 +159,51 @@ app.get('/buildings', async (req, res) => {
       type: 'FeatureCollection',
       features: result.rows.map((r) => r.geojson),
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get('/bidangtanah', async (req, res) => {
+  try {
+    const pool = getPool();
+    const result = await pool.query(`
+      SELECT jsonb_build_object(
+        'type', 'Feature',
+        'id', b.id,
+        'geometry', ST_AsGeoJSON(b.geom)::jsonb,
+        'properties', to_jsonb(b) - 'geom'
+      ) AS geojson
+      FROM "bidangtanah" b;
+    `);
+
+    res.json({
+      type: 'FeatureCollection',
+      features: result.rows.map((r) => r.geojson),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/buildings/stats', async (req, res) => {
+  try {
+    const pool = getPool();
+    const result = await pool.query(`
+      SELECT 
+    MIN(flood_haza) AS min_flood_hazard,
+    MAX(flood_haza) AS max_flood_hazard,
+    MIN(fire_hazar) AS min_fire_hazard,
+    MAX(fire_hazar) AS max_fire_hazard,
+    MIN(hazard_sum) AS min_hazard_sum,
+    MAX(hazard_sum) AS max_hazard_sum,
+    MIN("NJOP_TOTAL") AS min_njop_total,
+    MAX("NJOP_TOTAL") AS max_njop_total
+FROM "Buildings";
+    `);
+
+    res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
