@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, loginLimiter, registrationLimiter, googleAuthLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
 const authController = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth');
 const authValidator = require('../validators/auth.validator');
@@ -20,13 +20,13 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // POST /api/v1/auth/register - Register new user
-router.post('/register', authLimiter, authController.register);
+router.post('/register', registrationLimiter, authController.register);
 
 // POST /api/v1/auth/login - Login user
-router.post('/login', authLimiter, authController.login);
+router.post('/login', loginLimiter, authController.login);
 
 // POST /api/v1/auth/google - Google Sign-In
-router.post('/google', authLimiter, authController.googleSignIn);
+router.post('/google', googleAuthLimiter, authController.googleSignIn);
 
 // POST /api/v1/auth/logout - Logout user
 router.post('/logout', protect, authController.logout);
@@ -42,5 +42,8 @@ router.post('/send-verification', protect, authController.sendEmailVerification)
 
 // GET /api/v1/auth/check-verification - Check email verification status (protected route)
 router.get('/check-verification', protect, authController.checkEmailVerification);
+
+// GET /api/v1/auth/test-email - Test email configuration (development endpoint)
+router.get('/test-email', authController.testEmailConfiguration);
 
 module.exports = router;

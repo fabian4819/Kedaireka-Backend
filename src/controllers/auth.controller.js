@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
 const { auth, firestore, admin } = require('../config/firebase');
 const { validationResult } = require('express-validator');
+const emailService = require('../services/email.service');
 
 // Generate JWT tokens
 const generateTokens = (userId) => {
@@ -74,8 +75,16 @@ const register = async (req, res) => {
       firebase_metadata: JSON.stringify(firestoreUserData)
     });
 
-    // Send email verification
-    await auth.generateEmailVerificationLink(email);
+    // Generate and send email verification
+    try {
+      const verificationLink = await auth.generateEmailVerificationLink(email);
+      await emailService.sendVerificationEmail(email, name, verificationLink);
+      console.log('Email verification sent successfully to:', email);
+    } catch (emailError) {
+      console.error('Failed to send email verification:', emailError);
+      // Continue with registration even if email verification fails
+      // User can request verification later
+    }
 
     const { accessToken, refreshToken } = generateTokens(pgUser.id);
 
@@ -390,27 +399,24 @@ const sendEmailVerification = async (req, res) => {
   try {
     const user = req.user;
 
-    // For local users, create a verification link and log it
-    const verificationLink = `http://localhost:8080/verify?email=${encodeURIComponent(user.email)}&token=${Date.now()}`;
+    // Generate verification link using Firebase
+    const verificationLink = await auth.generateEmailVerificationLink(user.email);
 
-    console.log('='.repeat(50));
-    console.log('EMAIL VERIFICATION LINK (for testing):');
-    console.log(verificationLink);
-    console.log('='.repeat(50));
-    console.log(`User: ${user.email} (${user.name})`);
-    console.log('Please open this link in your browser to verify the email');
-    console.log('='.repeat(50));
-
-    // Temporarily mark as verified for testing
-    // In production, you would send this link via email
-    await User.update(user.id, { is_email_verified: true });
+    // Send email using the email service
+    const result = await emailService.sendVerificationEmail(
+      user.email,
+      user.name,
+      verificationLink
+    );
 
     res.json({
       success: true,
-      message: 'Verification link generated and displayed in console',
-      debug: {
-        verificationLink: verificationLink,
-        note: 'In production, this would be sent via email'
+      message: 'Verification email sent successfully',
+      data: {
+        mode: result.mode,
+        note: result.mode === 'development'
+          ? 'Please check server logs for verification link'
+          : 'Please check your email inbox'
       }
     });
 
@@ -429,13 +435,19 @@ const checkEmailVerification = async (req, res) => {
   try {
     const user = req.user;
 
-    // For testing purposes, mark email as verified
-    await User.update(user.id, { is_email_verified: true });
+    // Check Firebase user to get actual verification status
+    const firebaseUser = await auth.getUser(user.firebase_uid);
+    const isVerified = firebaseUser.emailVerified;
+
+    // Update PostgreSQL to match Firebase status
+    if (user.is_email_verified !== isVerified) {
+      await User.update(user.id, { is_email_verified: isVerified });
+    }
 
     res.json({
       success: true,
       data: {
-        isEmailVerified: true
+        isEmailVerified: isVerified
       }
     });
 
@@ -449,6 +461,41 @@ const checkEmailVerification = async (req, res) => {
   }
 };
 
+// Test email configuration (for development)
+const testEmailConfiguration = async (req, res) => {
+  try {
+    const result = await emailService.testConfiguration();
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        data: {
+          configured: true,
+          mode: 'production'
+        }
+      });
+    } else {
+      res.json({
+        success: false,
+        message: result.message,
+        data: {
+          configured: false,
+          mode: 'development',
+          note: 'Email will be logged to console in development mode'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Email configuration test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to test email configuration',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -457,5 +504,6 @@ module.exports = {
   refreshToken,
   logout,
   sendEmailVerification,
-  checkEmailVerification
+  checkEmailVerification,
+  testEmailConfiguration
 };
