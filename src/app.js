@@ -50,11 +50,33 @@ app.use(
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // List of allowed origins
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN || 'http://localhost:3000',
+      'https://api.mapbox.com',
+      'https://tiles.mapbox.com',
+      'https://.mapbox.com',
+      /^https:\/\/.*\.mapbox\.com$/, // Allow all Mapbox subdomains
+    ];
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.some((allowedOrigin) =>
+        typeof allowedOrigin === 'string' ? allowedOrigin === origin : allowedOrigin.test(origin)
+      )
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
 };
 app.use(cors(corsOptions));
 
